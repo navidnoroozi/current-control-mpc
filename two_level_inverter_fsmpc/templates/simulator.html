@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Simulator</title>
+    <!-- Bootstrap for easy layout -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+
+    <!-- MathJax for LaTeX rendering -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+
+    <style>
+        body {
+            margin: 20px;
+        }
+        .sim-img {
+            max-width: 100%;
+            border: 1px solid #ccc;
+            padding: 5px;
+        }
+        .result-img {
+            width: 100%;
+            border: 1px solid #ddd;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Heading -->
+        <h1 class="mb-4 text-center">Welcome to Our Homepage</h1>
+        <p>Here <b>Julia </b> and <em>Navid</em> say hello to you!</p>
+
+        <!-- Top Section: Image + Math -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <h4>Simulator Structure</h4>
+                <img src="static/simulator_structure.png" alt="Simulator Structure" class="sim-img">
+                <p class="mt-2">Our picture in Rio!</p>
+            </div>
+            <div class="col-md-4">
+                <h4>Mathematical Description</h4>
+                <p>
+                    Here we describe the closed loop control system using LaTeX notation:
+                </p>
+                <p>
+                    $$ \frac {di_a}{dt} = \big ( R i_a(t) + \int_0^t e(\tau) d\tau + K_d \frac{de(t)}{dt} \big ) / L$$
+                </p>
+                <p>
+                    where \( e(t) = r(t) - y(t) \).
+                </p>
+            </div>
+                        <div class="col-md-4">
+                <h4>Test Section</h4>
+                <p>
+                    We are testing section rendering here:
+                </p>
+            </div>
+        </div>
+
+        <!-- Input Form -->
+        <div class="mb-5">
+            <h4>Simulation Parameters</h4>
+            <form method="POST" action="{{ url_for('run_simulation') }}">
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Simulation Time (s)</label>
+                        <input type="number" step="0.01" class="form-control" name="sim_time" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Sampling Time (s)</label>
+                        <input type="number" step="0.001" class="form-control" name="sampling_time" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">PWM Method</label>
+                        <select class="form-select" name="pwm_method" required>
+                            <option value="sinusoidal">Sinusoidal</option>
+                            <option value="space_vector">Space Vector</option>
+                            <option value="third_harmonic">Third Harmonic</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">Run Simulation</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Results Section -->
+        {% if load_current_plot or switching_signals_plot %}
+        <div>
+            <h4>Simulation Results</h4>
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Load Current</h5>
+                    <img src="{{ url_for('static', filename=load_current_plot) }}" alt="Load Current" class="result-img">
+                </div>
+                <div class="col-md-6">
+                    <h5>Switching Signals</h5>
+                    <img src="{{ url_for('static', filename=switching_signals_plot) }}" alt="Switching Signals" class="result-img">
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+</body>
+</html>
