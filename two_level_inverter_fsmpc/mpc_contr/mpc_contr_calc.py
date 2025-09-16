@@ -24,7 +24,6 @@ class MPCSSolver:
         - current_time: Current time.
         - i_a_0: Initial load current.
         - s0: Initial guess for switching signal sequence.
-        - with_pwm: Boolean indicating if PWM is used.
 
         Returns:
         - Optimal switching signal sequence as a numpy array.
@@ -34,13 +33,14 @@ class MPCSSolver:
         # if s_seq.value is None:
         s_seq.value = s0
         
-        # constraints = [s_seq >= -1, s_seq <= 1]
         t_0 = current_time
         v_an_tarj = inverter.generateOutputVoltage(s_seq)
         i_a_traj = load.calculateLoadDynamics(i_a_0,v_an_tarj,t_0)
         i_a_ref_traj = currentReference.generateRefTrajectory(t_0)
         i_a_traj = cp.hstack(i_a_traj)
-        cost_func = cp.sum_squares(i_a_ref_traj - i_a_traj) 
+        i_delta = i_a_traj - i_a_ref_traj
+        s_delta = s_seq - s0
+        cost_func = cp.sum_squares(i_delta) + 0.1*cp.sum_squares(s_delta)
         
         prob = cp.Problem(cp.Minimize(cost_func)) # , constraints
         

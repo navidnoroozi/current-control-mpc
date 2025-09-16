@@ -5,6 +5,7 @@ import math
 from scipy.optimize import minimize
 import cvxpy as cp
 from cost_fun.cost_func_calc import CostFunction
+from power_current_conv.power_current_handler import RequiredPowerCurrentHandler
 from mpc_contr.mpc_contr_calc import MPCSSolver
 from load.load_dyn_cal import Load
 from inverter.inverter_behave import Inverter
@@ -15,24 +16,31 @@ from scenario_executor.scenario_exc import sim_executor
 # Control horizon
 cont_horizon = 5
 
+# Power requirements
+P_req = 3e3  # Active power in W
+Q_req = 0.0    # Reactive power in VAR
+V_rms_req = 230.0  # RMS voltage in V
+
 # DC Source Voltage
-V_dc=100.0
+V_dc = V_rms_req * math.sqrt(2) * 2  # V
 
 # Initial time
 t_0 = 0.0
 
 # Simulation time
-sim_time = 40e-4 # 50e-6 #
+sim_time = 50e-4 # 50e-6 #
 
 # Initial state
 i_a_0 = 5.0
 
 # Sampling rate
-sampling_rate = 25e-6
+sampling_rate = 25e-6 # 1e-4 # 
 
 inverter = Inverter(V_dc)
-load = Load(R=1.0,L=2e-3)
-currentReference = CurrentReference(sampling_rate,cont_horizon,I_ref_peak=5.0,f_ref=50*2*math.pi)
+load = Load(R=10.0,L=10e-3,V_backemf=60.0,f_backemf=50.0)
+powerCurrentHandler = RequiredPowerCurrentHandler(P_req, Q_req, V_rms_req)
+I_ref_peak, phi_ref = powerCurrentHandler.calculateCurrentMagnitudeAndPhase()
+currentReference = CurrentReference(sampling_rate,cont_horizon,I_ref_peak,phi_ref,f_ref=50*2*math.pi)
 mpc = MPCSSolver(cont_horizon)
 
 
