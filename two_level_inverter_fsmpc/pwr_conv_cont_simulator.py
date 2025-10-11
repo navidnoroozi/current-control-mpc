@@ -2,20 +2,14 @@ from itertools import islice, cycle
 import math
 import os
 import json
-from two_level_inverter_fsmpc.power_current_conv.power_current_handler import RequiredPowerCurrentHandler
-from two_level_inverter_fsmpc.mpc_contr.mpc_contr_calc import MPCSSolver
-from two_level_inverter_fsmpc.load.load_dyn_cal import Load
-from two_level_inverter_fsmpc.inverter.inverter_behave import Inverter
-from two_level_inverter_fsmpc.current_reference.current_ref_gen import CurrentReference
-from two_level_inverter_fsmpc.scenario_executor.scenario_exc import sim_executor
+from power_current_conv.power_current_handler import RequiredPowerCurrentHandler
+from mpc_contr.mpc_contr_calc import MPCSSolver
+from load.load_dyn_cal import Load
+from inverter.inverter_behave import Inverter
+from current_reference.current_ref_gen import CurrentReference
+from scenario_executor.scenario_exc import sim_executor
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-
-
-
-# Ensure static/plots exists
-PLOT_FOLDER = os.path.join("static", "plots")
-os.makedirs(PLOT_FOLDER, exist_ok=True)
 
 
 def simPowerConvControlSyst(
@@ -119,3 +113,6 @@ def simPowerConvControlSyst(
     ))
 
     return fig1, fig2
+
+if __name__ == "__main__":
+    simPowerConvControlSyst()
