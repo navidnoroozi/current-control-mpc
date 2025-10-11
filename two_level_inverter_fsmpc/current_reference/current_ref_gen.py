@@ -1,10 +1,8 @@
 import numpy as np
 import math
 
-
-
 class CurrentReference():
-    def __init__(self,sampling_rate,cont_horizon,I_ref_peak=5.0,phi_ref=0,f_ref=50.0):
+    def __init__(self,sampling_rate,cont_horizon,I_ref_peak=5.0,phi_ref=0.0,f_ref=50.0):
         """
         Initializes the Current Reference generator.
 
@@ -34,6 +32,6 @@ class CurrentReference():
         i_a_ref_traj = []
         for i in range(self.cont_horizon):
             t = t_0 + i * self.sampling_rate
-            i_a_ref = self.I_ref_peak * np.cos(2 * np.pi * self.f_ref * t - self.phi_ref)
+            i_a_ref = self.I_ref_peak * math.cos(2 * math.pi * self.f_ref * t - self.phi_ref)
             i_a_ref_traj.append(i_a_ref)
         return np.array(i_a_ref_traj)

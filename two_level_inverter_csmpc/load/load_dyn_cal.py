@@ -1,37 +1,34 @@
-import numpy as np
+
 import math
 
+class Load:
+    def __init__(self, sampling_rate, Rl, Ll, back_emf_peak, back_emf_freq, per_unit: bool=False):
+        self.Ts = float(sampling_rate)
+        self.Rl = float(Rl)
+        self.Ll = float(Ll)
+        self.V_emf = float(back_emf_peak)
+        self.f_emf = float(back_emf_freq)
+        self.per_unit = per_unit
 
-class Load():
-    def __init__(self, sampling_rate=1e-3, resistance=10.0, inductance=10e-3,back_emf_peak=100.0,back_emf_freq=50.0*2.0*math.pi):
+    def _bemf(self, t):
+        if self.per_unit:
+            return self.V_emf * math.cos(t) # OR math.cos(2.0*math.pi*self.f_emf*t) ?!
+        else:
+            return self.V_emf * math.cos(2.0*math.pi*self.f_emf*t)
+        
+
+    def step_euler(self, i_a, v, t, dt):
+        # di/dt = ( -R*i + v - e(t) ) / L
+        di = (- self.Rl * i_a + v - self._bemf(t)) / self.Ll
+        return i_a + dt * di
+
+    def calculateLoadDynamicsSubsteps(self, i_a_0, v_subseq, t_0, dt_sub):
         """
-        Initializes the Plant with a system dynamics calculator.
-
-        Parameters:
-        - sys_dyn_cal: An instance of SysDynCal that calculates system dynamics.
+        Advance through a sub-stepped waveform (for PWM).
         """
-        self.Ts = sampling_rate
-        self.Rl = resistance
-        self.Ll = inductance
-        self.V_emf = back_emf_peak
-        self.f_emf = back_emf_freq
-
-    def calculateLoadDynamics(self,i_a_0,v_an_tarj,t_0):
-        """
-        Calculates the next state of the plant based on the current state and control input.
-
-        Parameters:
-        - state: Current state of the plant.
-        - control_input: Control input to the plant.
-
-        Returns:
-        - Next state of the plant.
-        """
-        i_a_trajectory = [i_a_0]
-        i_a = i_a_0
-        t_current = t_0
-        for v in v_an_tarj:
-            i_a = i_a + self.Ts * (- self.Rl * i_a + v - self.V_emf * math.cos(self.f_emf*t_current)) / self.Ll
-            i_a_trajectory.append(i_a)
-            t_current += self.Ts
-        return i_a_trajectory
+        i = i_a_0
+        t = t_0
+        for v in v_subseq:
+            i = self.step_euler(i, v, t, dt_sub)
+            t += dt_sub
+        return [i]  # return final current as a list for consistency

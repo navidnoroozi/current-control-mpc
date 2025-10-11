@@ -1,5 +1,3 @@
-
-import numpy as np
 import math
 
 class Load():
@@ -35,7 +33,7 @@ class Load():
         t = t_0
         i_a = i_a_0
         for v_an in v_an_tarj:
-            v_backemf = self.V_backemf * np.sin(2 * np.pi * self.f_backemf * t)
+            v_backemf = self.V_backemf * math.sin(2 * math.pi * self.f_backemf * t)
             di_dt = (v_an - v_backemf - self.R * i_a) / self.L
             i_a_next = i_a + di_dt * sampling_rate
             i_a_traj.append(i_a_next)

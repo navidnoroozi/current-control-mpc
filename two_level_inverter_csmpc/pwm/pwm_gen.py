@@ -1,120 +1,68 @@
+
 import math
 
 class PWM:
-    def __init__(self, carrier_freq=1e6, Ts=1e-5, Vdc=520.0):
+    def __init__(self, carrier_freq, Ts, Vdc, per_unit: bool=False):
         """
-        carrier_freq : float
-            Frequency of triangular carrier [Hz].
-        Ts : float
-            Simulation sampling time [s].
-        Vdc : float
-            DC bus voltage [V].
-        """
-        self.fc = carrier_freq
-        self.Ts = Ts
-        self.Vdc = Vdc
+        Triangular-carrier PWM for a single leg (bipolar ±Vdc).
+        carrier_freq: Hz
+        Ts: controller/simulation step used by the outer loop [s]
+        Vdc: DC link voltage [V]
         
-        # Triangular carrier generator parameters
-        self.Tc = 1.0 / self.fc
-        self.carrier = 0.0
-        self.carrier_dir = 1  # +1 rising, -1 falling
-
-    def find_k(self,t_0):
         """
-        Find the base interval index k for time t given carrier period Tc.
+        self.fc = float(carrier_freq)
+        self.Ts = float(Ts)
+        self.Vdc = float(Vdc)
+        self.per_unit = bool(per_unit)
 
-        Parameters
-        ----------
-        t : float
-            Current time.
-        Tc : float
-            Carrier period.
-
-        Returns
-        -------
-        k : int
-            Base interval index.
-        half : str
-            'first_half' if t is in the first half of the interval, 'second_half' if in the second half.
-        """
-        if self.Tc <= 0:
-            raise ValueError("Tc must be positive")
-        k = math.floor(t_0 / self.Tc)  # base interval index
-        lower = k * self.Tc
-        midpoint = (k + 0.5) * self.Tc
-        upper = (k + 1) * self.Tc
-    
-        if lower <= t_0 <= midpoint:
-            return k, "first_half"
-        elif midpoint < t_0 < upper:
-            return k, "second_half"
+    def _triangle_01(self, t):
+        """Triangle in [0,1] with period 1/fc."""
+        Tc = 1.0 / self.fc
+        tau = t % Tc  # t mod Tc
+        half = 0.5 * Tc # to determine if t is the first half or second half
+        k = t // Tc   # the floor division // rounds the result down to the nearest whole number
+        if tau <= half:
+            return (t - k*Tc) / half
         else:
-            return None, "out_of_range"
+            return -(t - (k+1)*Tc) / half
 
-    def generateOneSampleGatingSignal(self, duty_cyc,t_0):
+    def _u_to_d(self, u):
+        d = 0.5 * (float(u) + 1.0)
+        if d < 0.0: d = 0.0
+        if d > 1.0: d = 1.0
+        return d
+
+    def synthesize_over_interval(self, u, t0, Ts=None, min_carrier_samples=20, min_step_samples=200):
         """
-        Perform one simulation step of PWM.
-
-        duty_cyc : float
-            Control input in [-1, 1] from MPC.
-
-        Returns
-        -------
-        v_out : float
-            Output inverter voltage applied to the load.
-        g1, g2 : int
-            Gating signals for the two switches of the half-bridge leg.
+        Generate a switching voltage waveform v(t) over [t0, t0+Ts) with sub-steps.
+        Returns (v_list, dt_sub), where dt_sub is the sub-step size used.
+        We choose dt_sub to satisfy BOTH:
+          - at least 'min_carrier_samples' samples per carrier period
+          - at least 'min_step_samples' samples per interval Ts
         """
-        # Update triangular carrier (sawtooth/triangular)
-        k, half = self.find_k(t_0)
-        if half == "first_half":
-            self.carrier = (t_0 - k * self.Tc) * (2.0 / self.Tc) #- 1.0
-        elif half == "second_half":
-            self.carrier = - (t_0 - (k + 1) * self.Tc) * (2.0 / self.Tc) #+ 1.0
-        else:
-            raise ValueError("Time t_0 is out of range for carrier generation.")
+        if Ts is None:
+            Ts = self.Ts
+        # substep based on carrier
+        T_car = 1.0 / self.fc
+        dt_car = T_car / float(min_carrier_samples)
+        dt_step = Ts / float(min_step_samples)
+        dt_sub = min(dt_car, dt_step)
+        if dt_sub <= 0.0:
+            dt_sub = Ts
+        n = max(1, int(math.ceil(Ts / dt_sub)))
+        dt_sub = Ts / n  # make it divide Ts exactly
 
-        # Compare duty cycle with carrier to generate gating signal
-        if (duty_cyc+1)/2 >= self.carrier:
-            g1 = 1
-            g2 = 0
-            v_out = self.Vdc / 2.0   # Inverter output voltage
-        else:
-            g1 = 0
-            g2 = 1
-            v_out = -self.Vdc / 2.0  # Inverter output voltage
+        d = self._u_to_d(u)
+        v_list = []
+        t = t0
+        for _ in range(n):
+            carrier = self._triangle_01(t)
+            gate_high = 1 if d > carrier else 0
+            v = (2*gate_high - 1) * self.Vdc  # bipolar ±Vdc
+            v_list.append(v)
+            t += dt_sub
+        return v_list, dt_sub
 
-        # g1 = 1 if duty_cyc >= self.carrier else 0
-        # g2 = 1 - g1  # Complementary switch
-
-        # # Inverter output voltage
-        # v_out = (g1 - g2) * (self.Vdc / 2)
-
-        return v_out, g1, g2
-    
-    def generateGatingSignals(self,duty_cyc_seq,t_0):
-        """
-        Generate gating signals for a sequence of duty cycles.
-
-        duty_cycle_sequence : array-like
-            Sequence of control inputs in [-1, 1] from MPC.
-
-        Returns
-        -------
-        v_out_seq : list of float
-            Sequence of output inverter voltages applied to the load.
-        g1_seq, g2_seq : list of int
-            Sequences of gating signals for the two switches of the half-bridge leg.
-        """
-        v_out_seq = []
-        g1_seq = []
-        g2_seq = []
-        t_current = t_0
-        for duty_cyc in duty_cyc_seq:
-            v_out, g1, g2 = self.generateOneSampleGatingSignal(duty_cyc,t_current)
-            v_out_seq.append(v_out)
-            g1_seq.append(g1)
-            g2_seq.append(g2)
-            t_current += self.Ts
-
-        return v_out_seq, g1_seq, g2_seq
+    def average_voltage(self, u):
+        """Ideal averaged model: E[v] over one PWM period equals Vdc * u."""
+        return self.Vdc * float(u)

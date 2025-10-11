@@ -1,7 +1,7 @@
 import math
 
 class RequiredPowerCurrentHandler:
-    def __init__(self, P_req = 3e3, Q_req = 0, V_rms_req = 230.0):
+    def __init__(self, P_req = 3e3, Q_req = 0.0, V_rms_req = 230.0):
         """
         Initializes the Power and Current Handler.
 
