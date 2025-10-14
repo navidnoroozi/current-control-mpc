@@ -1,7 +1,7 @@
-import math
 
+import math
 class RequiredPowerCurrentHandler:
-    def __init__(self, P_req = 3e3, Q_req = 0.0, V_rms_req = 230.0):
+    def __init__(self, P_req, Q_req, V_rms):
         """
         Initializes the Power and Current Handler.
 
@@ -10,21 +10,10 @@ class RequiredPowerCurrentHandler:
         - Q_req: Required reactive power (VAR).
         - V_rms_req: Required RMS voltage (V).
         """
-        self.P_req = P_req
-        self.Q_req = Q_req
-        self.V_rms_req = V_rms_req
-
+        self.P=P_req; self.Q=Q_req; self.V=V_rms
     def calculateCurrentMagnitudeAndPhase(self):
-        """
-        Calculates the required peak current magnitude and the phase angle based on the power requirements.
-
-        Returns:
-        - Required peak current magnitude (A).
-        - Phase angle (radians).
-        Note:
-        The returned current is the peak value, not RMS.
-        """
-        S_req = math.sqrt(self.P_req**2 + self.Q_req**2)  # Apparent power in VA
-        I_peak_req = S_req / self.V_rms_req  # Peak current magnitude in A
-        phi_req = math.atan2(self.Q_req, self.P_req)  # Phase angle in radians
-        return I_peak_req, phi_req
+        S = (self.P**2 + self.Q**2)**0.5
+        I_rms = S / self.V if self.V>0 else 0.0
+        I_peak = I_rms * (2**0.5)
+        phi = math.atan2(self.Q, self.P) if self.P or self.Q else 0.0
+        return I_peak, phi
