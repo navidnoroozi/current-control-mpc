@@ -137,7 +137,7 @@ class MPCSSolver:
         return 1 if duty >= 0 else 0
 
     # --- Public API ---
-    def solveMPC(self, inverter, load, currentReference, current_time, i_a_0, s0, phase_num):
+    def solveMPC(self, inverter, load, currentReference, current_time, i_a_0, s0):
         N = self.cont_horizon
         if N <= 0:
             return [self._last_action], 0.0

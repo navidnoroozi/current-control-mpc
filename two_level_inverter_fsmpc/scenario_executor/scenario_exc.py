@@ -1,8 +1,5 @@
 # === Run the simulation ===
-def sim_executor(load, inverter, mpc, currentReference, s0, 
-                 t_0: float = 0.0, i_a_0: float = 0.0, 
-                 sampling_rate: float = 1e-4, sim_time: float = 0.1, 
-                 phase_num: int = 1):
+def sim_executor(load, inverter, mpc, currentReference, s0, t_0 = 0, i_a_0 = 0, sampling_rate = 1e-4, sim_time = 0.1):
     """ Runs the simulation for the given parameters.
     Parameters:
     - load: Instance of Load class.
@@ -14,7 +11,6 @@ def sim_executor(load, inverter, mpc, currentReference, s0,
     - i_a_0: Initial load current.
     - sampling_rate: Sampling rate in seconds.
     - sim_time: Total simulation time in seconds.
-    - phase_num: Number of phases (1 for single-phase, 3 for balanced three-phase)
     Returns:
     - s_traj: Trajectory of switching signals.
     - i_a_traj: Trajectory of load current.
@@ -31,13 +27,12 @@ def sim_executor(load, inverter, mpc, currentReference, s0,
     current_time = t_0
     while current_time < sim_time:
         try:
-            s_sig, cost_func_val_np = mpc.solveMPC(inverter,load,currentReference,current_time,i_a_0,s0,phase_num)
+            s_sig, cost_func_val_np = mpc.solveMPC(inverter,load,currentReference,current_time,i_a_0,s0)
         except Exception:
             s_sig = [getattr(mpc, '_last_action', 1)]*mpc.cont_horizon
             cost_func_val_np = 1e9
-        i_a_next = load.calculateLoadDynamics(i_a_0,inverter.generateOutputVoltage([s_sig[0]]),
-                                              phase_num,current_time,sampling_rate)[-1]
-        i_ref_next = currentReference.generateRefTrajectory(current_time, phase_num)
+        i_a_next = load.calculateLoadDynamics(i_a_0,inverter.generateOutputVoltage([s_sig[0]]),current_time,sampling_rate)[-1]
+        i_ref_next = currentReference.generateRefTrajectory(current_time)
         i_a_traj.append(i_a_next)
         i_ref_traj.append(i_ref_next[0])
         t_sim.append(current_time)

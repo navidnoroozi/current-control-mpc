@@ -14,14 +14,9 @@ class RequiredPowerCurrentHandler:
         self.Q_req = Q_req
         self.V_rms_req = V_rms_req
 
-    def calculateCurrentMagnitudeAndPhase(self, phase_num: int = 1) -> tuple:
+    def calculateCurrentMagnitudeAndPhase(self):
         """
-        Calculates the required peak current magnitude
-          and the phase angle based on the power requirements in two cases: single-phase 
-          and balanced three-phase.
-        
-        Parameters:
-        - phase_num: Number of phases (1 for single-phase, 3 for balanced three-phase).
+        Calculates the required peak current magnitude and the phase angle based on the power requirements.
 
         Returns:
         - Required peak current magnitude (A).
@@ -30,12 +25,6 @@ class RequiredPowerCurrentHandler:
         The returned current is the peak value, not RMS.
         """
         S_req = math.sqrt(self.P_req**2 + self.Q_req**2)  # Apparent power in VA
+        I_peak_req = S_req / self.V_rms_req  # Peak current magnitude in A
         phi_req = math.atan2(self.Q_req, self.P_req)  # Phase angle in radians
-
-        if phase_num == 1:
-            I_peak_req = S_req / self.V_rms_req  # Peak current magnitude in A
-        elif phase_num == 3:
-            I_peak_req = (S_req / self.V_rms_req) * (2/3)  # Peak current magnitude in A
-        else:
-            raise ValueError("phase_num must be either 1 (single-phase) or 3 (three-phase).")
-        return (I_peak_req, phi_req)
+        return I_peak_req, phi_req
