@@ -9,7 +9,7 @@ import math
 
 # stage cost
 def stage_func(i_a, i_a_ref,u_seq_current,u_seq_last):
-    return (i_a - i_a_ref)**2 + 0.2*(u_seq_current-u_seq_last)**2
+    return (i_a - i_a_ref)**2
 
 ## Simulation parameters
 # Control and prediction horizon
@@ -32,7 +32,7 @@ carrier_freq = 1e4 # in kHz
 # Initial time
 t_0 = 0.0          # in sec
 # Simulation time
-sim_time = 0.02    # in sec
+sim_time = 0.01    # in sec
 # Overall sampling time
 sampling_time = 1/carrier_freq     # in kHz control/plant step (-> 100 samples per PWM period)
 

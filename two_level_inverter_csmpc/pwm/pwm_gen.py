@@ -27,6 +27,7 @@ class PWM:
             return -(t - (k+1)*Tc) / half
 
     def _u_to_d(self, u):
+        """Convert control input u in [-1,1] to duty cycle d in [0,1]."""
         d = 0.5 * (float(u) + 1.0)
         if d < 0.0: d = 0.0
         if d > 1.0: d = 1.0
